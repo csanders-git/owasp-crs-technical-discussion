@@ -364,7 +364,10 @@ Note that there is no setvar here, because I think it is not needed. All the ano
 
 ### Rules ###
 
-So a rule is more or less the same as an `if/then/else` construct with some meta data attached. The `conditions
+So a rule is more or less the same as an `if/then/else` construct with some meta data attached.
+
+
+The simple form
 
 ```.yaml
 - rule:
@@ -389,7 +392,56 @@ So a rule is more or less the same as an `if/then/else` construct with some meta
         - block  
 ```          
 
-        
+is a shortcut for the complete form, which contains and else bloc (and therefore need the if too.
+
+```.yaml
+- rule:
+    id: 999999
+    meta:
+        phase: request  # not sure if we need this
+        message: "Possible Foo attacks"
+        paranoia-level: 1
+        severity: CRITICAL # also be used to determine anomaly value
+        version: 1
+        # ...
+        tags:
+            - "application-multi"
+    if:
+            conditions:
+                - variable:
+                    - ARGS
+                  transformations:
+                     - removeSpaces
+                  operator: rx
+                  paramater: /some crazy regex/
+    then:
+        actions:
+            - block
+    else:
+        comment: not needed here
+```
+
+We can probably shortcut this to allow then/else have an explicit actions part. This will allow stuff like a positiv security model:
+
+```.yaml
+- rule:
+    id: 42
+    comment: make sure that all the cookie values contain only hex characters
+    if:
+        conditions:
+            - variables:
+                - REQUEST_COOKIE
+              operator: rx
+              parameter /^[a-fA-F0-9]+$/
+    then:
+        comment: match, everything is ok. Mark die variable as fine for all other rules
+        action:
+            - whitelist MATCHED_VARS
+    else:
+        - block
+```
+
+Note that this probably need more refinement, because we can have multiple vars with the same name.
     
 
 # Open Questions #
